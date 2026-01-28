@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f2f2f2;
+  font-family: system-ui, sans-serif;
+}
+
+.app-center {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  background: white;
+  width: min(90vw, 30rem);
+  padding: 1.25rem;
+  border-radius: 1rem;
+}
+
+h2 {
+  text-align: center;
+  margin: 0;
+}
+
+.divider {
+  height: 0.05rem;
+  background: #ddd;
+  margin: 1rem 0;
+}
+
+.input {
+  display: flex;
+  align-items: center;
+  border: 0.05rem solid #ccc;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.input span {
+  margin-right: 0.5rem;
+}
+
+.input input {
+  border: none;
+  flex: 1;
+  font-size: 1rem;
+  outline: none;
+}
+
+.btn {
+  min-height: 3rem;
+  border-radius: 1rem;
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  width: 100%;
+  cursor: pointer;
+  box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.15);
+}
+
+.btn + .btn {
+  margin-top: 1rem;
+}
+
+.green { background: #2ecc71; }
+.red { background: #e74c3c; }
+.grey { background: #555; }
+.yellow { background: #f1c40f; color: black; }
+.blue { background: #3498db; }
+
+.back-btn {
+  margin-top: 1rem;
+  background: transparent;
+  color: #555;
+  box-shadow: none;
+  font-size: 1rem;
+  height: auto;
+}
+
+.small-text {
+  text-align: center;
+  color: #777;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Dashboard */
+
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tab.active {
+  color: #3498db;
+  border-bottom: 0.2rem solid #3498db;
+}
+
+.student-card {
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 0.1rem 0.2rem #202020;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.student-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-code {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #444;
+}
+
+.help-text {
+  text-align: left;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  color: #333;
+}
+
+/* Status */
+
+.status-pill {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 60rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.student-time {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: #666;
+}
