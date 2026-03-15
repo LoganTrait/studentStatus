@@ -36,7 +36,7 @@ export default function StudentJoin({ onJoin, onBack }: Props) {
         <div className="input">
           <span>👤</span>
           <input
-            placeholder="Your name"
+            placeholder="Your seat number"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
