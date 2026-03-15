@@ -15,6 +15,10 @@ service cloud.firestore {
       match /students/{studentId} {
         allow read, write: if true;
       }
+
+      match /helpRequests/{requestId} {
+        allow read, write: if true;
+      }
     }
   }
 }
