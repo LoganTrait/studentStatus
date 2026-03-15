@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   updateStudentStatus,
   leaveSession,
-  listenToStudents,
+  listenToStudent,
   listenToRoom,
 } from "../firebase";
 import "../styles/ui.css";
@@ -35,21 +35,16 @@ export default function StudentStatus({
     return unsub;
   }, [sessionId]);
 
-  // Listen for student removal
   useEffect(() => {
-    let seen = false;
-
-    return listenToStudents(sessionId, (students) => {
-      const exists = students.some((s) => s.id === studentId);
-
-      if (exists) {
-        seen = true;
+    return listenToStudent(sessionId, studentId, (data) => {
+      if (!data.active) {
+        onExit(); // student removed or left
         return;
       }
 
-      if (seen && !exists) {
-        onExit();
-      }
+      // Update status and help text from firebase
+      setStatus(data.status);
+      setHelpText(data.helpText || "");
     });
   }, [sessionId, studentId]);
 

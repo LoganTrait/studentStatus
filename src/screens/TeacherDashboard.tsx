@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listenToStudents, removeStudent, closeSession } from "../firebase";
+import { listenToStudents, removeStudent, closeSession, resolveHelpRequest } from "../firebase";
 import "../styles/ui.css";
 
 export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
@@ -44,9 +44,12 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
   }
 
   // Filtered students based on tab
-  const filtered = students.filter(
-    (s) => s.status === tab && s.active !== false
-  );
+  const filtered = students
+    .filter((s) => s.status === tab && s.active !== false)
+    .sort((a, b) => {
+      if (!a.updatedAt || !b.updatedAt) return 0;
+      return a.updatedAt.seconds - b.updatedAt.seconds;
+    });
 
   return (
     <div className="app-center">
@@ -104,6 +107,15 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
               <>
                 {s.helpText && (
                   <div className="help-text">{s.helpText}</div>
+                )}
+                {s.status === "help" && (
+                  <button
+                    className="btn green"
+                    style={{ marginTop: "0.75rem" }}
+                    onClick={() => resolveHelpRequest(sessionId, s.id)}
+                  >
+                    Student Helped
+                  </button>
                 )}
                 <button
                   className="btn red"

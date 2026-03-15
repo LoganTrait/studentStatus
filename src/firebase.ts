@@ -7,7 +7,6 @@ import {
   setDoc,
   addDoc,
   updateDoc,
-  deleteDoc,
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
@@ -73,20 +72,60 @@ export async function updateStudentStatus(
 
   const ref = doc(db, "sessions", sessionId, "students", studentId);
 
+  await updateDoc(ref, {
+    status,
+    helpText,
+    updatedAt: serverTimestamp(),
+  });
+
+  // If help request then log it
   if (status === "help") {
+
+    const studentSnap = await getDoc(ref);
+    const studentData = studentSnap.data();
+
+    const helpRef = await addDoc(
+      collection(db, "sessions", sessionId, "helpRequests"),
+      {
+        studentId,
+        studentName: studentData?.name || "",
+        helpText,
+        requestedAt: serverTimestamp(),
+        resolvedAt: null,
+      }
+    );
+
+    // store request ID on student
     await updateDoc(ref, {
-      status,
-      helpText,
-      helpRequestedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  } else {
-    await updateDoc(ref, {
-      status,
-      helpText,
-      updatedAt: serverTimestamp(),
+      currentHelpRequestId: helpRef.id
     });
   }
+}
+
+// Teacher resolves help request
+export async function resolveHelpRequest(sessionId: string, studentId: string) {
+
+  const studentRef = doc(db, "sessions", sessionId, "students", studentId);
+  const studentSnap = await getDoc(studentRef);
+  const studentData = studentSnap.data();
+
+  if (!studentData?.currentHelpRequestId) return;
+
+  // resolve help request
+  await updateDoc(
+    doc(db, "sessions", sessionId, "helpRequests", studentData.currentHelpRequestId),
+    {
+      resolvedAt: serverTimestamp()
+    }
+  );
+
+  // update student status
+  await updateDoc(studentRef, {
+    status: "working",
+    helpText: "",
+    updatedAt: serverTimestamp(),
+    currentHelpRequestId: null
+  });
 }
 
 // Leave session
@@ -109,6 +148,21 @@ export function listenToRoom(
     if (!snap.exists()) callback(null);
     else callback(snap.data().name || "");
   });
+}
+
+// Listen to student (individual for student)
+export function listenToStudent(
+  sessionId: string,
+  studentId: string,
+  callback: (data: any) => void
+) {
+  return onSnapshot(
+    doc(db, "sessions", sessionId, "students", studentId),
+    (snap) => {
+      if (!snap.exists()) return;
+      callback({ id: snap.id, ...snap.data() });
+    }
+  );
 }
 
 // Listen to students 
@@ -150,8 +204,12 @@ export async function removeStudent(
   sessionId: string,
   studentId: string
 ) {
-  await deleteDoc(
-    doc(db, "sessions", sessionId, "students", studentId)
+  await updateDoc(
+    doc(db, "sessions", sessionId, "students", studentId),
+    {
+      active: false,
+      updatedAt: serverTimestamp()
+    }
   );
 }
 
