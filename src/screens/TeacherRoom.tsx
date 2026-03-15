@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createSession, getSession } from "../firebase";
+import { createSession, getSession, reopenSession } from "../firebase";
 import "../styles/ui.css";
 
 type Props = {
@@ -50,6 +50,8 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
       setError("Room not found");
       return;
     }
+
+    await reopenSession(roomCode.trim());
 
     // Enter session
     onEnter(roomCode.trim(), session.name || "");

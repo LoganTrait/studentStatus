@@ -37,8 +37,17 @@ export default function StudentStatus({
 
   // Listen for student removal
   useEffect(() => {
+    let seen = false;
+
     return listenToStudents(sessionId, (students) => {
-      if (!students.find((s) => s.id === studentId)) {
+      const exists = students.some((s) => s.id === studentId);
+
+      if (exists) {
+        seen = true;
+        return;
+      }
+
+      if (seen && !exists) {
         onExit();
       }
     });

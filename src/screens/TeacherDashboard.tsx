@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listenToStudents, removeStudent, deleteSession } from "../firebase";
+import { listenToStudents, removeStudent, closeSession } from "../firebase";
 import "../styles/ui.css";
 
 export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
@@ -38,13 +38,15 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
 
   // Close room
   async function closeRoom() {
-    if (!confirm("Delete room?")) return;
-    await deleteSession(sessionId);
+    if (!confirm("Close room?")) return;
+    await closeSession(sessionId);
     onExit();
   }
 
   // Filtered students based on tab
-  const filtered = students.filter((s) => s.status === tab);
+  const filtered = students.filter(
+    (s) => s.status === tab && s.active !== false
+  );
 
   return (
     <div className="app-center">
@@ -56,13 +58,13 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
 
         <div className="tabs">
           <div className={`tab ${tab === "help" ? "active" : ""}`} onClick={() => setTab("help")}>
-            Need Help ({students.filter(s => s.status === "help").length})
+            Need Help ({students.filter(s => s.status === "help" && s.active !== false).length})
           </div>
           <div className={`tab ${tab === "working" ? "active" : ""}`} onClick={() => setTab("working")}>
-            Working ({students.filter(s => s.status === "working").length})
+            Working ({students.filter(s => s.status === "working" && s.active !== false).length})
           </div>
           <div className={`tab ${tab === "dnd" ? "active" : ""}`} onClick={() => setTab("dnd")}>
-            Do Not Disturb ({students.filter(s => s.status === "dnd").length})
+            Do Not Disturb ({students.filter(s => s.status === "dnd" && s.active !== false).length})
           </div>
         </div>
 
@@ -118,7 +120,7 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
         <div className="divider" />
 
         <button className="btn red" onClick={closeRoom}>
-          Delete Room
+          Close Room
         </button>
       </div>
     </div>

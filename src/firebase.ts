@@ -31,7 +31,15 @@ export async function createSession(sessionId: string, name: string) {
   await setDoc(doc(db, "sessions", sessionId), {
     name,
     createdAt: serverTimestamp(),
+    active: true,
   });
+}
+
+export async function reopenSession(sessionId: string) {
+  await updateDoc(
+    doc(db, "sessions", sessionId),
+    { active: true }
+  );
 }
 
 // Get session
@@ -48,6 +56,7 @@ export async function joinSession(sessionId: string, studentName: string) {
       name: studentName,
       status: "working",
       helpText: "",
+      active: true,
       updatedAt: serverTimestamp(),
     }
   );
@@ -61,20 +70,33 @@ export async function updateStudentStatus(
   status: "working" | "help" | "dnd",
   helpText = ""
 ) {
-  await updateDoc(
-    doc(db, "sessions", sessionId, "students", studentId),
-    {
+
+  const ref = doc(db, "sessions", sessionId, "students", studentId);
+
+  if (status === "help") {
+    await updateDoc(ref, {
+      status,
+      helpText,
+      helpRequestedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    await updateDoc(ref, {
       status,
       helpText,
       updatedAt: serverTimestamp(),
-    }
-  );
+    });
+  }
 }
 
 // Leave session
 export async function leaveSession(sessionId: string, studentId: string) {
-  await deleteDoc(
-    doc(db, "sessions", sessionId, "students", studentId)
+  await updateDoc(
+    doc(db, "sessions", sessionId, "students", studentId),
+    {
+      active: false,
+      updatedAt: serverTimestamp(),
+    }
   );
 }
 
@@ -94,12 +116,31 @@ export function listenToStudents(
   sessionId: string,
   callback: (students: any[]) => void
 ) {
+  const students: any[] = [];
+
   return onSnapshot(
     collection(db, "sessions", sessionId, "students"),
     (snap) => {
-      callback(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
+
+      snap.docChanges().forEach((change) => {
+        const data = { id: change.doc.id, ...change.doc.data() };
+
+        if (change.type === "added") {
+          students.push(data);
+        }
+
+        if (change.type === "modified") {
+          const i = students.findIndex(s => s.id === data.id);
+          if (i !== -1) students[i] = data;
+        }
+
+        if (change.type === "removed") {
+          const i = students.findIndex(s => s.id === data.id);
+          if (i !== -1) students.splice(i,1);
+        }
+      });
+
+      callback([...students]);
     }
   );
 }
@@ -115,6 +156,16 @@ export async function removeStudent(
 }
 
 // Delete session 
-export async function deleteSession(sessionId: string) {
-  await deleteDoc(doc(db, "sessions", sessionId));
+// export async function deleteSession(sessionId: string) {
+//   await deleteDoc(doc(db, "sessions", sessionId));
+// }
+
+export async function closeSession(sessionId: string) {
+  await updateDoc(
+    doc(db, "sessions", sessionId),
+    {
+      active: false,
+      closedAt: serverTimestamp()
+    }
+  );
 }
