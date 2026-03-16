@@ -9,6 +9,7 @@ import {
   updateDoc,
   onSnapshot,
   serverTimestamp,
+  increment,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -57,6 +58,13 @@ export async function joinSession(sessionId: string, studentName: string) {
       helpText: "",
       active: true,
       updatedAt: serverTimestamp(),
+
+      statusChangeCount: 0,
+      statusCounts: {
+        working: 0,
+        help: 0,
+        dnd: 0
+      }
     }
   );
   return ref.id;
@@ -72,11 +80,27 @@ export async function updateStudentStatus(
 
   const ref = doc(db, "sessions", sessionId, "students", studentId);
 
+  const studentSnap = await getDoc(ref);
+  const studentData = studentSnap.data();
+
   await updateDoc(ref, {
     status,
     helpText,
     updatedAt: serverTimestamp(),
+    statusChangeCount: increment(1),
+    [`statusCounts.${status}`]: increment(1)
   });
+
+  // Log status change
+  await addDoc(
+    collection(db, "sessions", sessionId, "statusChanges"),
+    {
+      studentId,
+      studentName: studentData?.name || "",
+      status,
+      changedAt: serverTimestamp()
+    }
+  );
 
   // If help request then log it
   if (status === "help") {
