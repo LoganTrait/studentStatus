@@ -4,6 +4,7 @@ import {
   leaveSession,
   listenToStudent,
   listenToRoom,
+  resolveHelpRequest,
 } from "../firebase";
 import "../styles/ui.css";
 
@@ -89,6 +90,11 @@ export default function StudentStatus({
     setPrev(null);
   }
 
+  // Mark help request as resolved
+  async function resolveHelp() {
+    await resolveHelpRequest(sessionId, studentId);
+  }
+
   // Leave room
   async function confirmLeave() {
     if (!confirm("Leave the room?")) return;
@@ -137,7 +143,11 @@ export default function StudentStatus({
         <button className="btn yellow" onClick={undo}>
           ↩ Undo
         </button>
-
+        {status === "help" && (
+          <button className="btn green" onClick={resolveHelp}>
+            Help Resolved
+          </button>
+        )}
         <div className="divider" />
 
         <button className="btn red" onClick={confirmLeave}>
