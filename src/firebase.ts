@@ -10,6 +10,9 @@ import {
   onSnapshot,
   serverTimestamp,
   increment,
+  query,
+  where,
+  writeBatch
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -75,15 +78,15 @@ export async function updateStudentStatus(
   sessionId: string,
   studentId: string,
   status: "working" | "help" | "dnd",
-  helpText = ""
+  helpText = "",
+  studentName = ""
 ) {
+  const batch = writeBatch(db);
 
-  const ref = doc(db, "sessions", sessionId, "students", studentId);
+  const studentRef = doc(db, "sessions", sessionId, "students", studentId);
 
-  const studentSnap = await getDoc(ref);
-  const studentData = studentSnap.data();
-
-  await updateDoc(ref, {
+  // Update student
+  batch.update(studentRef, {
     status,
     helpText,
     updatedAt: serverTimestamp(),
@@ -91,39 +94,33 @@ export async function updateStudentStatus(
     [`statusCounts.${status}`]: increment(1)
   });
 
-  // Log status change
-  await addDoc(
-    collection(db, "sessions", sessionId, "statusChanges"),
-    {
-      studentId,
-      studentName: studentData?.name || "",
-      status,
-      changedAt: serverTimestamp()
-    }
-  );
+  // Status log
+  const statusRef = doc(collection(db, "sessions", sessionId, "statusChanges"));
+  batch.set(statusRef, {
+    studentId,
+    studentName,
+    status,
+    changedAt: serverTimestamp()
+  });
 
-  // If help request then log it
+  // Help request
   if (status === "help") {
+    const helpRef = doc(collection(db, "sessions", sessionId, "helpRequests"));
 
-    const studentSnap = await getDoc(ref);
-    const studentData = studentSnap.data();
+    batch.set(helpRef, {
+      studentId,
+      studentName,
+      helpText,
+      requestedAt: serverTimestamp(),
+      resolvedAt: null
+    });
 
-    const helpRef = await addDoc(
-      collection(db, "sessions", sessionId, "helpRequests"),
-      {
-        studentId,
-        studentName: studentData?.name || "",
-        helpText,
-        requestedAt: serverTimestamp(),
-        resolvedAt: null,
-      }
-    );
-
-    // store request ID on student
-    await updateDoc(ref, {
+    batch.update(studentRef, {
       currentHelpRequestId: helpRef.id
     });
   }
+
+  await batch.commit();
 }
 
 // Teacher resolves help request
@@ -194,33 +191,28 @@ export function listenToStudents(
   sessionId: string,
   callback: (students: any[]) => void
 ) {
-  const students: any[] = [];
+  const studentMap = new Map<string, any>();
 
-  return onSnapshot(
+  const q = query(
     collection(db, "sessions", sessionId, "students"),
-    (snap) => {
-
-      snap.docChanges().forEach((change) => {
-        const data = { id: change.doc.id, ...change.doc.data() };
-
-        if (change.type === "added") {
-          students.push(data);
-        }
-
-        if (change.type === "modified") {
-          const i = students.findIndex(s => s.id === data.id);
-          if (i !== -1) students[i] = data;
-        }
-
-        if (change.type === "removed") {
-          const i = students.findIndex(s => s.id === data.id);
-          if (i !== -1) students.splice(i,1);
-        }
-      });
-
-      callback([...students]);
-    }
+    where("active", "==", true)
   );
+
+  return onSnapshot(q, (snap) => {
+    snap.docChanges().forEach((change) => {
+      const data = { id: change.doc.id, ...change.doc.data() };
+
+      if (change.type === "added" || change.type === "modified") {
+        studentMap.set(data.id, data);
+      }
+
+      if (change.type === "removed") {
+        studentMap.delete(data.id); 
+      }
+    });
+
+    callback(Array.from(studentMap.values()));
+  });
 }
 
 // Remove student from dashboard

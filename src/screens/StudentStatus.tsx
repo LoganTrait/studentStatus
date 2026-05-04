@@ -69,7 +69,8 @@ export default function StudentStatus({
       sessionId,
       studentId,
       newStatus,
-      newHelpText
+      newHelpText,
+      studentName
     );
   }
 
@@ -84,7 +85,8 @@ export default function StudentStatus({
       sessionId,
       studentId,
       prev.status,
-      prev.helpText
+      prev.helpText,
+      studentName
     );
 
     setPrev(null);
