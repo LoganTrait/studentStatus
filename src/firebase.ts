@@ -14,6 +14,7 @@ import {
   where,
   writeBatch
 } from "firebase/firestore";
+import { getCurrentLoadTestActionId } from "./loadTestEvents";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -84,6 +85,8 @@ export async function updateStudentStatus(
   const batch = writeBatch(db);
 
   const studentRef = doc(db, "sessions", sessionId, "students", studentId);
+  const loadTestActionId = getCurrentLoadTestActionId();
+  const loadTestFields = loadTestActionId ? { loadTestActionId } : {};
 
   // Update student
   batch.update(studentRef, {
@@ -91,7 +94,8 @@ export async function updateStudentStatus(
     helpText,
     updatedAt: serverTimestamp(),
     statusChangeCount: increment(1),
-    [`statusCounts.${status}`]: increment(1)
+    [`statusCounts.${status}`]: increment(1),
+    ...loadTestFields
   });
 
   // Status log
@@ -100,7 +104,8 @@ export async function updateStudentStatus(
     studentId,
     studentName,
     status,
-    changedAt: serverTimestamp()
+    changedAt: serverTimestamp(),
+    ...loadTestFields
   });
 
   // Help request
@@ -112,7 +117,8 @@ export async function updateStudentStatus(
       studentName,
       helpText,
       requestedAt: serverTimestamp(),
-      resolvedAt: null
+      resolvedAt: null,
+      ...loadTestFields
     });
 
     batch.update(studentRef, {

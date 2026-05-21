@@ -6,6 +6,7 @@ import {
   listenToRoom,
   resolveHelpRequest,
 } from "../firebase";
+import { emitLoadTestEvent } from "../loadTestEvents";
 import "../styles/ui.css";
 
 // Student statuses
@@ -43,6 +44,15 @@ export default function StudentStatus({
         return;
       }
 
+      emitLoadTestEvent("student:self-snapshot", {
+        sessionId,
+        studentId,
+        studentName,
+        status: data.status,
+        helpText: data.helpText || "",
+        loadTestActionId: data.loadTestActionId ?? null
+      });
+
       // Update status and help text from firebase
       setStatus(data.status);
       setHelpText(data.helpText || "");
@@ -51,6 +61,7 @@ export default function StudentStatus({
 
   // Change status
   async function change(newStatus: Status) {
+    const startedAt = performance.now();
     let newHelpText = helpText;
 
     if (newStatus === "help") {
@@ -61,17 +72,49 @@ export default function StudentStatus({
         ) || "";
     }
 
+    emitLoadTestEvent("student:status-click", {
+      sessionId,
+      studentId,
+      studentName,
+      status: newStatus,
+      helpText: newHelpText
+    });
+
     setPrev({ status, helpText });
     setStatus(newStatus);
     setHelpText(newHelpText);
 
-    await updateStudentStatus(
-      sessionId,
-      studentId,
-      newStatus,
-      newHelpText,
-      studentName
-    );
+    try {
+      await updateStudentStatus(
+        sessionId,
+        studentId,
+        newStatus,
+        newHelpText,
+        studentName
+      );
+
+      emitLoadTestEvent("student:status-write-commit", {
+        sessionId,
+        studentId,
+        studentName,
+        status: newStatus,
+        helpText: newHelpText,
+        durationMs: performance.now() - startedAt,
+        estimatedDocumentWrites: newStatus === "help" ? 4 : 2
+      });
+    } catch (error) {
+      emitLoadTestEvent("student:status-write-error", {
+        sessionId,
+        studentId,
+        studentName,
+        status: newStatus,
+        helpText: newHelpText,
+        durationMs: performance.now() - startedAt,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+
+      throw error;
+    }
   }
 
   // Undo last status change
@@ -94,7 +137,30 @@ export default function StudentStatus({
 
   // Mark help request as resolved
   async function resolveHelp() {
-    await resolveHelpRequest(sessionId, studentId);
+    const startedAt = performance.now();
+
+    try {
+      await resolveHelpRequest(sessionId, studentId);
+
+      emitLoadTestEvent("student:resolve-help-commit", {
+        sessionId,
+        studentId,
+        studentName,
+        durationMs: performance.now() - startedAt,
+        estimatedDocumentReads: 1,
+        estimatedDocumentWrites: 2
+      });
+    } catch (error) {
+      emitLoadTestEvent("student:resolve-help-error", {
+        sessionId,
+        studentId,
+        studentName,
+        durationMs: performance.now() - startedAt,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+
+      throw error;
+    }
   }
 
   // Leave room
@@ -108,13 +174,15 @@ export default function StudentStatus({
     <div className="app-center">
       <div className="card">
         <h2>{roomName}</h2>
-        <div className="small-text">{studentName}</div>
+        <div className="small-text" data-testid="student-display-name">{studentName}</div>
 
         <div className="divider" />
 
         <div className="status-row">
           <span>Current status:</span>
           <span
+            data-testid="student-current-status"
+            data-status={status}
             className={`status-pill ${
               status === "working"
                 ? "green"
@@ -133,26 +201,26 @@ export default function StudentStatus({
 
         <div className="divider" />
 
-        <button className="btn green" onClick={() => change("working")}>
+        <button className="btn green" data-testid="status-working" onClick={() => change("working")}>
           ✔ Working
         </button>
-        <button className="btn red" onClick={() => change("help")}>
+        <button className="btn red" data-testid="status-help" onClick={() => change("help")}>
           ✋ Need Help
         </button>
-        <button className="btn grey" onClick={() => change("dnd")}>
+        <button className="btn grey" data-testid="status-dnd" onClick={() => change("dnd")}>
           ⛔ Do Not Disturb
         </button>
-        <button className="btn yellow" onClick={undo}>
+        <button className="btn yellow" data-testid="status-undo" onClick={undo}>
           ↩ Undo
         </button>
         {status === "help" && (
-          <button className="btn green" onClick={resolveHelp}>
+          <button className="btn green" data-testid="student-resolve-help" onClick={resolveHelp}>
             Help Resolved
           </button>
         )}
         <div className="divider" />
 
-        <button className="btn red" onClick={confirmLeave}>
+        <button className="btn red" data-testid="student-leave-room" onClick={confirmLeave}>
           Leave Room
         </button>
       </div>

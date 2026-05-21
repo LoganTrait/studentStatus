@@ -6,10 +6,10 @@ export default function RoleSelect({ onSelect }: { onSelect: (r: "student" | "te
       <div className="card">
         <h2>Select Role</h2>
         <div className="divider" />
-        <button className="btn green" onClick={() => onSelect("student")}>
+        <button className="btn green" data-testid="role-student" onClick={() => onSelect("student")}>
           Student
         </button>
-        <button className="btn blue" onClick={() => onSelect("teacher")}>
+        <button className="btn blue" data-testid="role-teacher" onClick={() => onSelect("teacher")}>
           Teacher
         </button>
       </div>

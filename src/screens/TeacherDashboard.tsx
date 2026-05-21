@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listenToStudents, removeStudent, closeSession, resolveHelpRequest } from "../firebase";
+import { emitLoadTestEvent } from "../loadTestEvents";
 import "../styles/ui.css";
 
 export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
@@ -15,7 +16,39 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
   // Live updates
   const [, tick] = useState(0);
 
-  useEffect(() => listenToStudents(sessionId, setStudents), [sessionId]);
+  useEffect(() => listenToStudents(sessionId, (nextStudents) => {
+    emitLoadTestEvent("teacher:students-snapshot", {
+      sessionId,
+      roomName,
+      studentCount: nextStudents.length,
+      students: nextStudents.map((s) => ({
+        id: s.id,
+        name: s.name,
+        status: s.status,
+        active: s.active,
+        helpText: s.helpText || "",
+        loadTestActionId: s.loadTestActionId ?? null
+      }))
+    });
+
+    setStudents(nextStudents);
+  }), [sessionId]);
+
+  useEffect(() => {
+    emitLoadTestEvent("teacher:students-rendered", {
+      sessionId,
+      roomName,
+      studentCount: students.length,
+      students: students.map((s) => ({
+        id: s.id,
+        name: s.name,
+        status: s.status,
+        active: s.active,
+        helpText: s.helpText || "",
+        loadTestActionId: s.loadTestActionId ?? null
+      }))
+    });
+  }, [students, sessionId, roomName]);
 
   // time update every 30 seconds
   useEffect(() => {
@@ -53,20 +86,20 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
 
   return (
     <div className="app-center">
-      <div className="card">
+      <div className="card" data-testid="teacher-dashboard">
         <h2>{roomName}</h2>
-        <div className="room-code">Room Code: {sessionId}</div>
+        <div className="room-code" data-testid="teacher-room-code-display">Room Code: {sessionId}</div>
 
         <div className="divider" />
 
         <div className="tabs">
-          <div className={`tab ${tab === "help" ? "active" : ""}`} onClick={() => setTab("help")}>
+          <div className={`tab ${tab === "help" ? "active" : ""}`} data-testid="teacher-tab-help" onClick={() => setTab("help")}>
             Need Help ({students.filter(s => s.status === "help" && s.active !== false).length})
           </div>
-          <div className={`tab ${tab === "working" ? "active" : ""}`} onClick={() => setTab("working")}>
+          <div className={`tab ${tab === "working" ? "active" : ""}`} data-testid="teacher-tab-working" onClick={() => setTab("working")}>
             Working ({students.filter(s => s.status === "working" && s.active !== false).length})
           </div>
-          <div className={`tab ${tab === "dnd" ? "active" : ""}`} onClick={() => setTab("dnd")}>
+          <div className={`tab ${tab === "dnd" ? "active" : ""}`} data-testid="teacher-tab-dnd" onClick={() => setTab("dnd")}>
             Do Not Disturb ({students.filter(s => s.status === "dnd" && s.active !== false).length})
           </div>
         </div>
@@ -75,6 +108,11 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
           <div
             key={s.id}
             className="student-card"
+            data-testid="teacher-student-card"
+            data-student-id={s.id}
+            data-student-name={s.name}
+            data-status={s.status}
+            data-load-test-action-id={s.loadTestActionId || ""}
             onClick={() => setOpenId(openId === s.id ? null : s.id)}
           >
             <div className="student-header">
@@ -111,6 +149,7 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
                 {s.status === "help" && (
                   <button
                     className="btn green"
+                    data-testid="teacher-resolve-help"
                     style={{ marginTop: "0.75rem" }}
                     onClick={() => resolveHelpRequest(sessionId, s.id)}
                   >
@@ -119,6 +158,7 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
                 )}
                 <button
                   className="btn red"
+                  data-testid="teacher-remove-student"
                   style={{ marginTop: "0.75rem" }}
                   onClick={() => kick(s.id)}
                 >
@@ -131,7 +171,7 @@ export default function TeacherDashboard({ sessionId, roomName, onExit }: any) {
 
         <div className="divider" />
 
-        <button className="btn red" onClick={closeRoom}>
+        <button className="btn red" data-testid="teacher-close-room" onClick={closeRoom}>
           Close Room
         </button>
       </div>

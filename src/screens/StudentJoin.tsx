@@ -36,6 +36,7 @@ export default function StudentJoin({ onJoin, onBack }: Props) {
         <div className="input">
           <span>👤</span>
           <input
+            data-testid="student-name"
             placeholder="Your seat number"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -45,6 +46,7 @@ export default function StudentJoin({ onJoin, onBack }: Props) {
         <div className="input">
           <span>🔑</span>
           <input
+            data-testid="student-room-code"
             placeholder="Room code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
@@ -55,7 +57,7 @@ export default function StudentJoin({ onJoin, onBack }: Props) {
 
         <div className="divider" />
 
-        <button className="btn green" onClick={handleJoin}>
+        <button className="btn green" data-testid="student-join-room" onClick={handleJoin}>
           Join Room
         </button>
 
@@ -64,7 +66,7 @@ export default function StudentJoin({ onJoin, onBack }: Props) {
         </div>
 
         {/* Back button */}
-        <button className="btn back-btn" onClick={onBack}>
+        <button className="btn back-btn" data-testid="student-back" onClick={onBack}>
           Back
         </button>
       </div>

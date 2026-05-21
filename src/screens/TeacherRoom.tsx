@@ -67,12 +67,14 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
         <div className="tabs">
           <div
             className={`tab ${tab === "create" ? "active" : ""}`}
+            data-testid="teacher-create-tab"
             onClick={() => setTab("create")}
           >
             Create
           </div>
           <div
             className={`tab ${tab === "open" ? "active" : ""}`}
+            data-testid="teacher-open-tab"
             onClick={() => setTab("open")}
           >
             Join
@@ -87,6 +89,7 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
             <div className="input">
               <span>🏷️</span>
               <input
+                data-testid="teacher-room-name"
                 placeholder="Room name"
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
@@ -96,13 +99,14 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
             <div className="input">
               <span>🔑</span>
               <input
+                data-testid="teacher-room-code"
                 placeholder="Room code"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
               />
             </div>
 
-            <button className="btn green" onClick={handleCreate}>
+            <button className="btn green" data-testid="teacher-create-room" onClick={handleCreate}>
               Create Room
             </button>
           </>
@@ -114,13 +118,14 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
             <div className="input">
               <span>🔑</span>
               <input
+                data-testid="teacher-open-room-code"
                 placeholder="Room code"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
               />
             </div>
 
-            <button className="btn blue" onClick={handleOpen}>
+            <button className="btn blue" data-testid="teacher-open-room" onClick={handleOpen}>
               Join Room
             </button>
           </>
@@ -133,7 +138,7 @@ export default function TeacherRoom({ onEnter, onBack }: Props) {
         )}
 
         {/* Back button */}
-        <button className="btn back-btn" onClick={onBack}>
+        <button className="btn back-btn" data-testid="teacher-back" onClick={onBack}>
           Back
         </button>
       </div>
